@@ -4,21 +4,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>الطيبات</title>
     <link rel="stylesheet" href="/style.css">
-    <style>
-        * { -webkit-box-sizing: border-box; }
-        body { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
-    </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
+            <button class="menu-btn">☰</button>
             <h1>الطيبات</h1>
-            <button id="newChatBtn" class="new-chat-btn">محادثة جديدة</button>
+            <button class="new-chat-btn" id="newChatBtn">✏️</button>
         </div>
         <div id="chatBox" class="chat-box"></div>
         <div class="input-area">
-            <input type="text" id="userInput" placeholder="اكتب رسالتك هنا...">
-            <button id="sendBtn">إرسال</button>
+            <div class="input-box">
+                <input type="text" id="userInput" placeholder="اكتب رسالتك هنا...">
+                <button class="mic-btn">🎤</button>
+            </div>
+            <button id="sendBtn">➤</button>
         </div>
     </div>
     <script src="/script.js"></script>
