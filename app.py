@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
+from duckduckgo_search import DDGS
 import requests
 import os
 
@@ -11,31 +12,53 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 API_URL = "https://router.huggingface.co/v1/chat/completions"
 MODEL_NAME = "openai/gpt-oss-120b"
 
-SYSTEM_PROMPT = "اسمك الطيبات. انت مساعد ذكاء اصطناعي ودود ومرن جدا في اسلوبك. ممكن تكون رسمي لما الموضوع جاد، وممكن تكون عامي ومرح لما الجو خفيف، وممكن تتكلم بجدية وحزم لو المستخدم محتاج كده. لو حد سألك بالعربي رد بالعربي وافضل تستخدم اللهجة المصرية بطلاقة لو المستخدم بيكلمك بالمصري. لو حد سألك بالانجليزي رد بالانجليزي. كن مفيد وصادق ومباشر دايما."
+SYSTEM_PROMPT = "اسمك الطيبات. انت مساعد ذكاء اصطناعي ودود ومرن جدا في اسلوبك. ممكن تكون رسمي لما الموضوع جاد، وممكن تكون عامي ومرح لما الجو خفيف. لو حد سألك بالعربي رد بالعربي وافضل تستخدم اللهجة المصرية بطلاقة لو المستخدم بيكلمك بالمصري. لو حد سألك بالانجليزي رد بالانجليزي. كن مفيد وصادق ومباشر دايما. لو في نتايج بحث هتتبعتلك استخدمها في ردك وكن محدد."
 
-conversations = {}
+def search_web(query):
+    try:
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=3))
+            if results:
+                search_text = ""
+                for r in results:
+                    search_text += f"- {r['title']}: {r['body']}\n"
+                return search_text
+    except Exception as e:
+        print(f"Search error: {str(e)}")
+    return None
+
+def needs_search(message):
+    keywords = ["ابحث", "بحث", "اخبار", "أخبار", "دلوقتي", "الآن", "اليوم", "سعر", "نتيجة", "search", "news", "today", "price", "latest", "2024", "2025", "2026"]
+    for kw in keywords:
+        if kw in message.lower():
+            return True
+    return False
 
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
     user_message = data.get("message", "")
-    session_id = data.get("session_id", "default")
+    messages = data.get("history", [])
 
-    if session_id not in conversations:
-        conversations[session_id] = []
+    system_content = SYSTEM_PROMPT
 
-    conversations[session_id].append({"role": "user", "content": user_message})
-
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + conversations[session_id]
+    if needs_search(user_message):
+        search_results = search_web(user_message)
+        if search_results:
+            system_content += f"\n\nنتايج البحث على الإنترنت:\n{search_results}"
 
     headers = {
         "Authorization": f"Bearer {HF_TOKEN}",
         "Content-Type": "application/json"
     }
 
+    all_messages = [{"role": "system", "content": system_content}]
+    all_messages += messages
+    all_messages.append({"role": "user", "content": user_message})
+
     payload = {
         "model": MODEL_NAME,
-        "messages": messages,
+        "messages": all_messages,
         "max_tokens": 500
     }
 
@@ -45,7 +68,6 @@ def chat():
 
         if "choices" in res_data and len(res_data["choices"]) > 0:
             reply = res_data["choices"][0]["message"]["content"]
-            conversations[session_id].append({"role": "assistant", "content": reply})
         elif "error" in res_data:
             reply = "Error from API: " + str(res_data["error"])
         else:
@@ -54,14 +76,6 @@ def chat():
         return jsonify({"response": reply})
     except Exception as e:
         return jsonify({"response": "Error: " + str(e)})
-
-@app.route("/clear", methods=["POST"])
-def clear():
-    data = request.json
-    session_id = data.get("session_id", "default")
-    if session_id in conversations:
-        conversations[session_id] = []
-    return jsonify({"status": "cleared"})
 
 @app.route("/")
 def home():

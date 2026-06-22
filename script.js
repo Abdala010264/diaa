@@ -2,6 +2,7 @@ const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
 const newChatBtn = document.getElementById("newChatBtn");
+let history = [];
 
 function parseMarkdown(text) {
   return text
@@ -27,16 +28,18 @@ async function sendMessage() {
   if (!text) return;
   addMessage(text, "user");
   userInput.value = "";
-  addMessage("...", "bot");
+  addMessage("جاري البحث والرد...", "bot");
 
   try {
     const res = await fetch("/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text })
+      body: JSON.stringify({ message: text, history: history })
     });
     const data = await res.json();
     chatBox.lastChild.innerHTML = parseMarkdown(data.response);
+    history.push({ role: "user", content: text });
+    history.push({ role: "assistant", content: data.response });
   } catch (err) {
     chatBox.lastChild.textContent = "حصل خطأ في الاتصال";
   }
@@ -45,6 +48,7 @@ async function sendMessage() {
 function newChat() {
   chatBox.innerHTML = "";
   userInput.value = "";
+  history = [];
   userInput.focus();
 }
 
