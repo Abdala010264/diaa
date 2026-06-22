@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><title>Diaa</title></head>
+<body>
+<h1>البوت شغال</h1>
+<form method="post">
+<input name="message" placeholder="اكتب سؤالك">
+<button type="submit">ارسال</button>
+</form>
+{% if reply %}
+<p>{{ reply }}</p>
+{% endif %}
+</body>
+</html>
