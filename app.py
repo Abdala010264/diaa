@@ -11,8 +11,6 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 API_URL = "https://router.huggingface.co/v1/chat/completions"
 MODEL_NAME = "openai/gpt-oss-120b"
 
-SYSTEM_PROMPT = "اسمك الطيبات. انت مساعد ذكاء اصطناعي ودود ومرن جدا في اسلوبك. ممكن تكون رسمي لما الموضوع جاد، وممكن تكون عامي ومرح لما الجو خفيف، وممكن تتكلم بجدية وحزم لو المستخدم محتاج كده. لو حد سألك بالعربي رد بالعربي وافضل تستخدم اللهجة المصرية بطلاقة لو المستخدم بيكلمك بالمصري. لو حد سألك بالانجليزي رد بالانجليزي. كن مفيد وصادق ومباشر دايما."
-
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
@@ -26,7 +24,6 @@ def chat():
     payload = {
         "model": MODEL_NAME,
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message}
         ],
         "max_tokens": 500
@@ -43,6 +40,7 @@ def chat():
         else:
             reply = "Unexpected response: " + str(res_data)
 
+        save_chat(user_message, reply)
         return jsonify({"response": reply})
     except Exception as e:
         return jsonify({"response": "Error: " + str(e)})
