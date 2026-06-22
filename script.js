@@ -1,6 +1,7 @@
 const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
+const newChatBtn = document.getElementById("newChatBtn");
 
 function parseMarkdown(text) {
   return text
@@ -41,7 +42,14 @@ async function sendMessage() {
   }
 }
 
+function newChat() {
+  chatBox.innerHTML = "";
+  userInput.value = "";
+  userInput.focus();
+}
+
 sendBtn.addEventListener("click", sendMessage);
+newChatBtn.addEventListener("click", newChat);
 userInput.addEventListener("keypress", (e) => {
   if (e.key === "Enter") sendMessage();
 });

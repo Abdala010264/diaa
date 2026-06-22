@@ -1,20 +1,21 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>الطيبات</title>
-<link rel="stylesheet" href="/style.css">
+    <title>الطيبات - AI Chat</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<div class="chat-container">
-  <div class="chat-header">الطيبات</div>
-  <div class="chat-box" id="chatBox"></div>
-  <div class="input-area">
-    <input type="text" id="userInput" placeholder="اكتب رسالتك هنا...">
-    <button id="sendBtn">إرسال</button>
-  </div>
-</div>
-<script src="/script.js"></script>
+    <div class="container">
+        <div class="header">
+            <h1>الطيبات</h1>
+            <button id="newChatBtn" class="new-chat-btn">محادثة جديدة</button>
+        </div>
+        <div id="chatBox" class="chat-box"></div>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="اكتب رسالتك هنا...">
+            <button id="sendBtn">إرسال</button>
+        </div>
+    </div>
+    <script src="/script.js"></script>
 </body>
 </html>
