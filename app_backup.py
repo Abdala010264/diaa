@@ -1,0 +1,60 @@
+from flask import Flask, request, jsonify
+from dotenv import load_dotenv
+import requests
+import os
+
+load_dotenv()
+
+app = Flask(__name__)
+
+HF_TOKEN = os.getenv("HF_TOKEN")
+API_URL = "https://router.huggingface.co/v1/chat/completions"
+MODEL_NAME = "openai/gpt-oss-120b"
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.json
+    user_message = data.get("message", "")
+
+    headers = {
+        "Authorization": f"Bearer {HF_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": MODEL_NAME,
+        "messages": [
+            {"role": "user", "content": user_message}
+        ],
+        "max_tokens": 500
+    }
+
+    try:
+        res = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+        res_data = res.json()
+
+        if "choices" in res_data and len(res_data["choices"]) > 0:
+            reply = res_data["choices"][0]["message"]["content"]
+        elif "error" in res_data:
+            reply = "Error from API: " + str(res_data["error"])
+        else:
+            reply = "Unexpected response: " + str(res_data)
+
+        return jsonify({"response": reply})
+    except Exception as e:
+        return jsonify({"response": "Error: " + str(e)})
+
+@app.route("/")
+def home():
+    return open("index.html").read()
+
+@app.route("/style.css")
+def css():
+    return open("style.css").read(), 200, {"Content-Type": "text/css"}
+
+@app.route("/script.js")
+def js():
+    return open("script.js").read(), 200, {"Content-Type": "application/javascript"}
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
