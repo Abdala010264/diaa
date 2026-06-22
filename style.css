@@ -129,3 +129,15 @@ em {
   color: #87ceeb;
   font-style: italic;
 }
+
+html, body {
+  height: 100%;
+  width: 100%;
+}
+
+.container {
+  width: 100% !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+  max-width: 100% !important;
+}
