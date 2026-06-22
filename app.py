@@ -11,10 +11,22 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 API_URL = "https://router.huggingface.co/v1/chat/completions"
 MODEL_NAME = "openai/gpt-oss-120b"
 
+SYSTEM_PROMPT = "اسمك الطيبات. انت مساعد ذكاء اصطناعي ودود ومرن جدا في اسلوبك. ممكن تكون رسمي لما الموضوع جاد، وممكن تكون عامي ومرح لما الجو خفيف، وممكن تتكلم بجدية وحزم لو المستخدم محتاج كده. لو حد سألك بالعربي رد بالعربي وافضل تستخدم اللهجة المصرية بطلاقة لو المستخدم بيكلمك بالمصري. لو حد سألك بالانجليزي رد بالانجليزي. كن مفيد وصادق ومباشر دايما."
+
+conversations = {}
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
     user_message = data.get("message", "")
+    session_id = data.get("session_id", "default")
+
+    if session_id not in conversations:
+        conversations[session_id] = []
+
+    conversations[session_id].append({"role": "user", "content": user_message})
+
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + conversations[session_id]
 
     headers = {
         "Authorization": f"Bearer {HF_TOKEN}",
@@ -23,9 +35,7 @@ def chat():
 
     payload = {
         "model": MODEL_NAME,
-        "messages": [
-            {"role": "user", "content": user_message}
-        ],
+        "messages": messages,
         "max_tokens": 500
     }
 
@@ -35,15 +45,23 @@ def chat():
 
         if "choices" in res_data and len(res_data["choices"]) > 0:
             reply = res_data["choices"][0]["message"]["content"]
+            conversations[session_id].append({"role": "assistant", "content": reply})
         elif "error" in res_data:
             reply = "Error from API: " + str(res_data["error"])
         else:
             reply = "Unexpected response: " + str(res_data)
 
-        save_chat(user_message, reply)
         return jsonify({"response": reply})
     except Exception as e:
         return jsonify({"response": "Error: " + str(e)})
+
+@app.route("/clear", methods=["POST"])
+def clear():
+    data = request.json
+    session_id = data.get("session_id", "default")
+    if session_id in conversations:
+        conversations[session_id] = []
+    return jsonify({"status": "cleared"})
 
 @app.route("/")
 def home():
