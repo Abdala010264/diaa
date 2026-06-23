@@ -12,7 +12,21 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 API_URL = "https://router.huggingface.co/v1/chat/completions"
 MODEL_NAME = "openai/gpt-oss-120b"
 
-SYSTEM_PROMPT = "اسمك الطيبات. انت مساعد ذكاء اصطناعي ودود ومرن جدا في اسلوبك. ممكن تكون رسمي لما الموضوع جاد، وممكن تكون عامي ومرح لما الجو خفيف. لو حد سألك بالعربي رد بالعربي وافضل تستخدم اللهجة المصرية بطلاقة لو المستخدم بيكلمك بالمصري. لو حد سألك بالانجليزي رد بالانجليزي. لو عندك معلومات من البحث استخدمها في ردك وقول المصدر."
+SYSTEM_PROMPT = "اسمك الطيبات. انت مساعد ذكاء اصطناعي ودود ومرن جدا في اسلوبك. ممكن تكون رسمي لما الموضوع جاد، وممكن تكون عامي ومرح لما الجو خفيف. لو حد سألك بالعربي رد بالعربي وافضل تستخدم اللهجة المصرية بطلاقة لو المستخدم بيكلمك بالمصري. لو حد سألك بالانجليزي رد بالانجليزي. لو عندك معلومات من البحث او الاسعار استخدمها في ردك مباشرة."
+
+def get_exchange_rates():
+    try:
+        res = requests.get("https://api.exchangerate-api.com/v4/latest/USD", timeout=10)
+        data = res.json()
+        rates = data.get("rates", {})
+        egp = rates.get("EGP", "غير متاح")
+        eur = rates.get("EUR", "غير متاح")
+        gbp = rates.get("GBP", "غير متاح")
+        sar = rates.get("SAR", "غير متاح")
+        aed = rates.get("AED", "غير متاح")
+        return f"أسعار الصرف الآن مقابل الدولار الأمريكي: جنيه مصري={egp}, يورو={eur}, جنيه إسترليني={gbp}, ريال سعودي={sar}, درهم إماراتي={aed}"
+    except:
+        return ""
 
 def web_search(query):
     try:
@@ -26,13 +40,16 @@ def web_search(query):
             if text:
                 results.append(text)
         return " | ".join(results) if results else ""
-    except Exception as e:
+    except:
         return ""
 
+def needs_currency(message):
+    keywords = ["سعر", "دولار", "يورو", "جنيه", "عملة", "صرف", "ريال", "درهم", "dollar", "euro", "currency", "exchange", "كام الدولار", "كام اليورو"]
+    return any(k in message.lower() for k in keywords)
+
 def needs_search(message):
-    keywords = ["سعر", "كام", "اليوم", "الان", "دلوقتي", "اخبار", "نتيجة", "طقس", "عملة", "دولار", "يورو", "جنيه", "بورصة", "price", "today", "news", "weather", "current", "latest", "now", "2025", "2026"]
-    message_lower = message.lower()
-    return any(k in message_lower for k in keywords)
+    keywords = ["اليوم", "الان", "دلوقتي", "اخبار", "نتيجة", "طقس", "بورصة", "today", "news", "weather", "current", "latest", "now", "2025", "2026"]
+    return any(k in message.lower() for k in keywords)
 
 @app.route("/")
 def home():
@@ -44,15 +61,21 @@ def chat():
     user_message = data.get("message", "")
     history = data.get("history", [])
 
-    search_context = ""
+    extra_context = ""
+
+    if needs_currency(user_message):
+        rates = get_exchange_rates()
+        if rates:
+            extra_context += f"\n\n[أسعار العملات الحالية]: {rates}"
+
     if needs_search(user_message):
         search_result = web_search(user_message)
         if search_result:
-            search_context = f"\n\n[نتائج البحث على الإنترنت]: {search_result}"
+            extra_context += f"\n\n[نتائج البحث]: {search_result}"
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     messages += history
-    messages.append({"role": "user", "content": user_message + search_context})
+    messages.append({"role": "user", "content": user_message + extra_context})
 
     headers = {
         "Authorization": f"Bearer {HF_TOKEN}",
