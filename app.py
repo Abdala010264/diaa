@@ -9,22 +9,39 @@ load_dotenv()
 app = Flask(__name__)
 
 HF_TOKEN = os.getenv("HF_TOKEN")
+WEATHER_KEY = os.getenv("WEATHER_KEY")
 API_URL = "https://router.huggingface.co/v1/chat/completions"
 MODEL_NAME = "openai/gpt-oss-120b"
 
-SYSTEM_PROMPT = "اسمك الطيبات. انت مساعد ذكاء اصطناعي ودود ومرن جدا في اسلوبك. ممكن تكون رسمي لما الموضوع جاد، وممكن تكون عامي ومرح لما الجو خفيف. لو حد سألك بالعربي رد بالعربي وافضل تستخدم اللهجة المصرية بطلاقة لو المستخدم بيكلمك بالمصري. لو حد سألك بالانجليزي رد بالانجليزي. لو عندك معلومات من البحث او الاسعار استخدمها في ردك مباشرة."
+SYSTEM_PROMPT = "اسمك الطيبات. انت مساعد ذكاء اصطناعي ودود ومرن جدا في اسلوبك. بتتكلم بالمصري بطلاقة لو المستخدم بيكلمك بالمصري. لو عندك معلومات من البحث او الاسعار او الطقس استخدمها في ردك مباشرة وبثقة من غير ما تقول مش عارف."
+
+def get_weather(city="Cairo"):
+    try:
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_KEY}&units=metric&lang=ar"
+        res = requests.get(url, timeout=10)
+        data = res.json()
+        if data.get("cod") == 200:
+            temp = data["main"]["temp"]
+            feels = data["main"]["feels_like"]
+            desc = data["weather"][0]["description"]
+            humidity = data["main"]["humidity"]
+            city_name = data["name"]
+            return f"الطقس في {city_name}: {desc}، درجة الحرارة {temp}°C (تبدو كأنها {feels}°C)، الرطوبة {humidity}%"
+        return ""
+    except:
+        return ""
 
 def get_exchange_rates():
     try:
         res = requests.get("https://api.exchangerate-api.com/v4/latest/USD", timeout=10)
         data = res.json()
         rates = data.get("rates", {})
-        egp = rates.get("EGP", "غير متاح")
-        eur = rates.get("EUR", "غير متاح")
-        gbp = rates.get("GBP", "غير متاح")
-        sar = rates.get("SAR", "غير متاح")
-        aed = rates.get("AED", "غير متاح")
-        return f"أسعار الصرف الآن مقابل الدولار الأمريكي: جنيه مصري={egp}, يورو={eur}, جنيه إسترليني={gbp}, ريال سعودي={sar}, درهم إماراتي={aed}"
+        egp = rates.get("EGP", "")
+        eur = rates.get("EUR", "")
+        gbp = rates.get("GBP", "")
+        sar = rates.get("SAR", "")
+        aed = rates.get("AED", "")
+        return f"أسعار الصرف الآن: 1 دولار = {egp} جنيه مصري، {eur} يورو، {gbp} جنيه إسترليني، {sar} ريال سعودي، {aed} درهم إماراتي"
     except:
         return ""
 
@@ -43,13 +60,24 @@ def web_search(query):
     except:
         return ""
 
+def needs_weather(message):
+    keywords = ["طقس", "حرارة", "درجة", "مطر", "شمس", "رياح", "جو", "weather", "temperature", "rain"]
+    return any(k in message.lower() for k in keywords)
+
 def needs_currency(message):
-    keywords = ["سعر", "دولار", "يورو", "جنيه", "عملة", "صرف", "ريال", "درهم", "dollar", "euro", "currency", "exchange", "كام الدولار", "كام اليورو"]
+    keywords = ["سعر", "دولار", "يورو", "جنيه", "عملة", "صرف", "ريال", "درهم", "dollar", "euro", "currency", "exchange"]
     return any(k in message.lower() for k in keywords)
 
 def needs_search(message):
-    keywords = ["اليوم", "الان", "دلوقتي", "اخبار", "نتيجة", "طقس", "بورصة", "today", "news", "weather", "current", "latest", "now", "2025", "2026"]
+    keywords = ["اليوم", "الان", "دلوقتي", "اخبار", "نتيجة", "بورصة", "today", "news", "current", "latest", "now", "2025", "2026"]
     return any(k in message.lower() for k in keywords)
+
+def extract_city(message):
+    cities = {"القاهرة": "Cairo", "الاسكندرية": "Alexandria", "الجيزة": "Giza", "اسوان": "Aswan", "الاقصر": "Luxor", "مكة": "Mecca", "الرياض": "Riyadh", "دبي": "Dubai", "لندن": "London", "باريس": "Paris", "نيويورك": "New York"}
+    for arabic, english in cities.items():
+        if arabic in message:
+            return english
+    return "Cairo"
 
 @app.route("/")
 def home():
@@ -63,10 +91,16 @@ def chat():
 
     extra_context = ""
 
+    if needs_weather(user_message):
+        city = extract_city(user_message)
+        weather = get_weather(city)
+        if weather:
+            extra_context += f"\n\n[معلومات الطقس]: {weather}"
+
     if needs_currency(user_message):
         rates = get_exchange_rates()
         if rates:
-            extra_context += f"\n\n[أسعار العملات الحالية]: {rates}"
+            extra_context += f"\n\n[أسعار العملات]: {rates}"
 
     if needs_search(user_message):
         search_result = web_search(user_message)
