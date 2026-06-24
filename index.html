@@ -1,24 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
     <title>الطيبات</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
     <div class="container">
+        <!-- الهيدر -->
         <div class="header">
             <button class="menu-btn">☰</button>
             <h1>الطيبات</h1>
             <button class="new-chat-btn" id="newChatBtn">✏️</button>
         </div>
-        <div id="chatBox" class="chat-box"></div>
+
+        <!-- منطقة المحادثة -->
+        <div id="chatBox" class="chat-box">
+            <div class="welcome-msg">
+                <div class="avatar">🌙</div>
+                <p>أهلاً بك في الطيبات! كيف يمكنني مساعدتك اليوم؟</p>
+            </div>
+        </div>
+
+        <!-- منطقة الإدخال -->
         <div class="input-area">
             <div class="input-box">
-                <input type="text" id="userInput" placeholder="اكتب رسالتك هنا...">
-                <button class="mic-btn">🎤</button>
+                <button class="mic-btn" id="micBtn">🎤</button>
+                <input type="text" id="userInput" placeholder="اكتب رسالتك هنا..." />
+                <button class="send-btn" id="sendBtn">➤</button>
             </div>
-            <button id="sendBtn">➤</button>
+            <div class="input-actions">
+                <button class="action-btn" id="camBtn">📷 كاميرا</button>
+                <button class="action-btn" id="fileBtn">📎 ملف</button>
+            </div>
         </div>
     </div>
     <script src="/script.js"></script>
